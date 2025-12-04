@@ -11,15 +11,20 @@ ALGORITHM = "HS256"
 def verify_jwt(credentials = Depends(security)):
     
     token = credentials.credentials
+    print(f"[API_GATEWAY] verify_jwt - Token received: {token[:50]}...")
+    print(f"[API_GATEWAY] verify_jwt - SECRET_KEY: {settings.SECRET_KEY}")
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"[API_GATEWAY] verify_jwt - Token verified successfully: {payload}")
         return payload
 
     except jwt.ExpiredSignatureError:
+        print(f"[API_GATEWAY] verify_jwt - Token expired")
         raise HTTPException(status_code=401, detail="Token expired")
 
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        print(f"[API_GATEWAY] verify_jwt - Invalid token: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
 
 

@@ -48,6 +48,13 @@ class ProfileCompleteResponse(BaseModel):
     access_token: str
     token_type: str
     complete_profile: bool
+    
+    class Config:
+        extra = "forbid"  # Reject extra fields to keep response strict
+    
+    class Config:
+        # Allow extra fields to be ignored
+        extra = "allow"
     user_id: int
     next_endpoint: str
 
