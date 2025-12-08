@@ -46,6 +46,21 @@ services:
       - palinur-network
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ../palinur_frontend
+      dockerfile: Dockerfile
+    container_name: palinur-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - api-gateway
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
 networks:
   palinur-network:
     driver: bridge
