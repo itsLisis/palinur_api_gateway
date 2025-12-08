@@ -27,7 +27,7 @@ async def get_profile_options():
 async def complete_profile(data: ProfileComplete, payload: dict = Depends(require_incomplete_profile)):
     user_id = payload["user_id"]
     
-    profile_data = data.model_dump()
+    profile_data = data.model_dump(mode='json')
     profile_data["user_id"] = user_id
     
     try:
@@ -35,6 +35,7 @@ async def complete_profile(data: ProfileComplete, payload: dict = Depends(requir
 
             user_response = await client.post(
                 f"{settings.USER_SERVICE_URL}/user/complete_profile",
+                params={"user_id": user_id},
                 json=profile_data
             )
 
