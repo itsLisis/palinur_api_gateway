@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build:
+      context: ../palinur_auth_service
+      dockerfile: Dockerfile
+    container_name: palinur-auth-service
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=postgresql://palmin:palinur_2025*@userservice.cd4ke84oq9bq.us-east-2.rds.amazonaws.com:5432/postgres
+      - SECRET_KEY=lacreta
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ../palinur_user_service
+      dockerfile: Dockerfile
+    container_name: palinur-user-service
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://palmin:palinur_2025*@userservice.cd4ke84oq9bq.us-east-2.rds.amazonaws.com:5432/postgres
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: palinur-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8002
+      - USER_SERVICE_URL=http://user-service:8001
+      - SECRET_KEY=lacreta
+    depends_on:
+      - auth-service
+      - user-service
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+networks:
+  palinur-network:
+    driver: bridge
