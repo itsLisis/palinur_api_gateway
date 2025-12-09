@@ -8,6 +8,8 @@ services:
     container_name: palinur-auth-service
     ports:
       - "8002:8002"
+    volumes:
+      - ../palinur_auth_service:/app
     environment:
       - DATABASE_URL=postgresql://palmin:palinur_2025*@userservice.cd4ke84oq9bq.us-east-2.rds.amazonaws.com:5432/postgres
       - SECRET_KEY=lacreta
@@ -22,6 +24,8 @@ services:
     container_name: palinur-user-service
     ports:
       - "8001:8001"
+    volumes:
+      - ../palinur_user_service:/app
     environment:
       - DATABASE_URL=postgresql://palmin:palinur_2025*@userservice.cd4ke84oq9bq.us-east-2.rds.amazonaws.com:5432/postgres
     networks:
@@ -35,6 +39,8 @@ services:
     container_name: palinur-api-gateway
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
     environment:
       - AUTH_SERVICE_URL=http://auth-service:8002
       - USER_SERVICE_URL=http://user-service:8001
@@ -53,13 +59,20 @@ services:
     container_name: palinur-frontend
     ports:
       - "3000:3000"
+    volumes:
+      - ../palinur_frontend:/app      
+      - /app/node_modules   
     environment:
       - REACT_APP_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     depends_on:
       - api-gateway
     networks:
       - palinur-network
     restart: unless-stopped
+    stdin_open: true
+    tty: true
 
 networks:
   palinur-network:
