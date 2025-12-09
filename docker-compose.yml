@@ -1,0 +1,88 @@
+services:
+  auth-service:
+    build:
+      context: ../palinur_auth_service
+      dockerfile: Dockerfile
+    container_name: palinur-auth-service
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../palinur_auth_service:/app
+    env_file:
+      - ../palinur_auth_service/.env
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ../palinur_user_service
+      dockerfile: Dockerfile
+    container_name: palinur-user-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../palinur_user_service:/app
+    env_file:
+      - ../palinur_user_service/.env
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+  matching-service:
+    build:
+      context: ../palinur_matching_service
+      dockerfile: Dockerfile
+    container_name: palinur-matching-service
+    ports:
+      - "8003:8003"
+    volumes:
+      - ../palinur_matching_service:/app
+    env_file:
+      - ../palinur_matching_service/.env
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: palinur-api-gateway
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - auth-service
+      - user-service
+      - matching-service
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../palinur_frontend
+      dockerfile: Dockerfile
+    container_name: palinur-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../palinur_frontend:/app      
+      - /app/node_modules   
+    env_file:
+      - ../palinur_frontend/.env
+    depends_on:
+      - api-gateway
+    networks:
+      - palinur-network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+networks:
+  palinur-network:
+    driver: bridge
