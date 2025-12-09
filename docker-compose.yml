@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   auth-service:
     build:
@@ -10,9 +8,8 @@ services:
       - "8002:8002"
     volumes:
       - ../palinur_auth_service:/app
-    environment:
-      - DATABASE_URL=postgresql://palmin:palinur_2025*@userservice.cd4ke84oq9bq.us-east-2.rds.amazonaws.com:5432/postgres
-      - SECRET_KEY=lacreta
+    env_file:
+      - ../palinur_auth_service/.env
     networks:
       - palinur-network
     restart: unless-stopped
@@ -26,8 +23,23 @@ services:
       - "8001:8001"
     volumes:
       - ../palinur_user_service:/app
-    environment:
-      - DATABASE_URL=postgresql://palmin:palinur_2025*@userservice.cd4ke84oq9bq.us-east-2.rds.amazonaws.com:5432/postgres
+    env_file:
+      - ../palinur_user_service/.env
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+  matching-service:
+    build:
+      context: ../palinur_matching_service
+      dockerfile: Dockerfile
+    container_name: palinur-matching-service
+    ports:
+      - "8003:8003"
+    volumes:
+      - ../palinur_matching_service:/app
+    env_file:
+      - ../palinur_matching_service/.env
     networks:
       - palinur-network
     restart: unless-stopped
@@ -41,13 +53,12 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-    environment:
-      - AUTH_SERVICE_URL=http://auth-service:8002
-      - USER_SERVICE_URL=http://user-service:8001
-      - SECRET_KEY=lacreta
+    env_file:
+      - .env
     depends_on:
       - auth-service
       - user-service
+      - matching-service
     networks:
       - palinur-network
     restart: unless-stopped
@@ -62,10 +73,8 @@ services:
     volumes:
       - ../palinur_frontend:/app      
       - /app/node_modules   
-    environment:
-      - REACT_APP_API_URL=http://localhost:8000
-      - CHOKIDAR_USEPOLLING=true
-      - WATCHPACK_POLLING=true
+    env_file:
+      - ../palinur_frontend/.env
     depends_on:
       - api-gateway
     networks:
