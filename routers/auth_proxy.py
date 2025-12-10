@@ -8,7 +8,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 @router.post("/register", response_model=AuthResponse)
 async def register_proxy(data: UserRegister, request: Request):
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             res = await client.post(
                 f"{settings.AUTH_SERVICE_URL}/auth/register", 
                 json=data.model_dump(mode='json'),
@@ -38,7 +38,7 @@ async def register_proxy(data: UserRegister, request: Request):
 @router.post("/login", response_model=AuthResponse)
 async def login_proxy(data: UserLogin, request: Request):
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             res = await client.post(
                 f"{settings.AUTH_SERVICE_URL}/auth/login", 
                 json=data.model_dump(),

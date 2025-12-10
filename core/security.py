@@ -41,3 +41,11 @@ def require_incomplete_profile(payload: dict = Depends(verify_jwt)):
             detail="Profile already completed. Access denied."
         )
     return payload
+
+
+def get_current_user(payload: dict = Depends(verify_jwt)):
+    """
+    Dependency to get the current authenticated user.
+    Returns the JWT payload with user_id and complete_profile status.
+    """
+    return payload

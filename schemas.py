@@ -22,6 +22,7 @@ class ProfileComplete(BaseModel):
     username: str
     introduction: str
     birthday: date
+    gender_id: int
     sexual_orientation_id: int
     interest_ids: list[int] = []
     image_urls: list[str] = []

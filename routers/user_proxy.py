@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from core.config import settings
-from core.security import require_incomplete_profile
+from core.security import require_incomplete_profile, get_current_user
 from schemas import ProfileComplete, ProfileCompleteResponse
 import httpx
 
@@ -75,3 +75,26 @@ async def complete_profile(data: ProfileComplete, payload: dict = Depends(requir
             }
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
+
+@router.get("/profile")
+async def get_user_profile(payload: dict = Depends(get_current_user)):
+    """Get the profile of the authenticated user."""
+    user_id = payload["user_id"]
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"{settings.USER_SERVICE_URL}/user/profile",
+                params={"user_id": user_id}
+            )
+
+        if res.status_code != 200:
+            try:
+                error_detail = res.json()
+            except:
+                error_detail = res.text or "Unknown error from user service"
+            raise HTTPException(status_code=res.status_code, detail=error_detail)
+
+        return res.json()
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"User service unavailable: {str(e)}")
