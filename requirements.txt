@@ -8,3 +8,4 @@ PyJWT
 pydantic[email]
 python-multipart
 requests
+websockets
