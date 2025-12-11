@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-version: '3.8'
-
-=======
->>>>>>> 4eda9aa118853b46ca502e90e98115b6aaae3432
 services:
   auth-service:
     build:
@@ -13,14 +8,8 @@ services:
       - "8002:8002"
     volumes:
       - ../palinur_auth_service:/app
-<<<<<<< HEAD
-    environment:
-      - DATABASE_URL=postgresql://palmin:palinur_2025*@userservice.cd4ke84oq9bq.us-east-2.rds.amazonaws.com:5432/postgres
-      - SECRET_KEY=lacreta
-=======
     env_file:
       - ../palinur_auth_service/.env
->>>>>>> 4eda9aa118853b46ca502e90e98115b6aaae3432
     networks:
       - palinur-network
     restart: unless-stopped
@@ -34,10 +23,6 @@ services:
       - "8001:8001"
     volumes:
       - ../palinur_user_service:/app
-<<<<<<< HEAD
-    environment:
-      - DATABASE_URL=postgresql://palmin:palinur_2025*@userservice.cd4ke84oq9bq.us-east-2.rds.amazonaws.com:5432/postgres
-=======
     env_file:
       - ../palinur_user_service/.env
     networks:
@@ -55,7 +40,6 @@ services:
       - ../palinur_matching_service:/app
     env_file:
       - ../palinur_matching_service/.env
->>>>>>> 4eda9aa118853b46ca502e90e98115b6aaae3432
     networks:
       - palinur-network
     restart: unless-stopped
@@ -69,22 +53,12 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-<<<<<<< HEAD
-    environment:
-      - AUTH_SERVICE_URL=http://auth-service:8002
-      - USER_SERVICE_URL=http://user-service:8001
-      - SECRET_KEY=lacreta
-    depends_on:
-      - auth-service
-      - user-service
-=======
     env_file:
       - .env
     depends_on:
       - auth-service
       - user-service
       - matching-service
->>>>>>> 4eda9aa118853b46ca502e90e98115b6aaae3432
     networks:
       - palinur-network
     restart: unless-stopped
@@ -97,17 +71,10 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ../palinur_frontend:/app      
-      - /app/node_modules   
-<<<<<<< HEAD
-    environment:
-      - REACT_APP_API_URL=http://localhost:8000
-      - CHOKIDAR_USEPOLLING=true
-      - WATCHPACK_POLLING=true
-=======
+      - ../palinur_frontend:/app
+      - /app/node_modules
     env_file:
       - ../palinur_frontend/.env
->>>>>>> 4eda9aa118853b46ca502e90e98115b6aaae3432
     depends_on:
       - api-gateway
     networks:
