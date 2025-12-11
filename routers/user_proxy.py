@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from core.config import settings
-from core.security import require_incomplete_profile
+from core.security import require_incomplete_profile, get_current_user
 from schemas import ProfileComplete, ProfileCompleteResponse
 import httpx
 
@@ -75,3 +75,108 @@ async def complete_profile(data: ProfileComplete, payload: dict = Depends(requir
             }
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
+
+@router.get("/profile")
+async def get_user_profile(payload: dict = Depends(get_current_user)):
+    """Get the profile of the authenticated user."""
+    user_id = payload["user_id"]
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"{settings.USER_SERVICE_URL}/user/profile",
+                params={"user_id": user_id}
+            )
+
+        if res.status_code != 200:
+            try:
+                error_detail = res.json()
+            except:
+                error_detail = res.text or "Unknown error from user service"
+            raise HTTPException(status_code=res.status_code, detail=error_detail)
+
+        return res.json()
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"User service unavailable: {str(e)}")
+
+@router.post("/profile/upload-image")
+async def upload_profile_image(
+    file: UploadFile = File(...),
+    payload: dict = Depends(get_current_user)
+):
+    """Upload a profile image."""
+    user_id = payload["user_id"]
+    
+    try:
+        # Read file content
+        file_content = await file.read()
+        
+        # Create multipart form data
+        files = {"file": (file.filename, file_content, file.content_type)}
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            res = await client.post(
+                f"{settings.USER_SERVICE_URL}/user/profile/upload-image",
+                params={"user_id": user_id},
+                files=files
+            )
+
+        if res.status_code != 200:
+            try:
+                error_detail = res.json()
+            except:
+                error_detail = res.text or "Unknown error from user service"
+            raise HTTPException(status_code=res.status_code, detail=error_detail)
+
+        return res.json()
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"User service unavailable: {str(e)}")
+
+@router.delete("/profile/image/{image_id}")
+async def delete_profile_image(
+    image_id: int,
+    payload: dict = Depends(get_current_user)
+):
+    """Delete a profile image."""
+    user_id = payload["user_id"]
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.delete(
+                f"{settings.USER_SERVICE_URL}/user/profile/image/{image_id}",
+                params={"user_id": user_id}
+            )
+
+        if res.status_code != 200:
+            try:
+                error_detail = res.json()
+            except:
+                error_detail = res.text or "Unknown error from user service"
+            raise HTTPException(status_code=res.status_code, detail=error_detail)
+
+        return res.json()
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"User service unavailable: {str(e)}")
+
+@router.get("/profiles/random")
+async def get_random_profile(payload: dict = Depends(get_current_user)):
+    """Get a random profile for the authenticated user."""
+    user_id = payload["user_id"]
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"{settings.USER_SERVICE_URL}/user/profiles/random",
+                params={"user_id": user_id}
+            )
+
+        if res.status_code != 200:
+            try:
+                error_detail = res.json()
+            except:
+                error_detail = res.text or "Unknown error from user service"
+            raise HTTPException(status_code=res.status_code, detail=error_detail)
+
+        return res.json()
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"User service unavailable: {str(e)}")

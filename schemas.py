@@ -4,10 +4,12 @@ from datetime import date
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
+    turnstile_token: str
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    turnstile_token: str
 
 class AuthResponse(BaseModel):
     access_token: str
@@ -20,6 +22,7 @@ class ProfileComplete(BaseModel):
     username: str
     introduction: str
     birthday: date
+    gender_id: int
     sexual_orientation_id: int
     interest_ids: list[int] = []
     image_urls: list[str] = []

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from core.config import settings
 import httpx
 from schemas import UserRegister, UserLogin, AuthResponse
@@ -6,12 +6,13 @@ from schemas import UserRegister, UserLogin, AuthResponse
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/register", response_model=AuthResponse)
-async def register_proxy(data: UserRegister):
+async def register_proxy(data: UserRegister, request: Request):
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             res = await client.post(
                 f"{settings.AUTH_SERVICE_URL}/auth/register", 
-                json=data.model_dump(mode='json')
+                json=data.model_dump(mode='json'),
+                headers={"X-Forwarded-For": request.client.host}
             )
 
         if res.status_code != 200:
@@ -35,12 +36,13 @@ async def register_proxy(data: UserRegister):
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login_proxy(data: UserLogin):
+async def login_proxy(data: UserLogin, request: Request):
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             res = await client.post(
                 f"{settings.AUTH_SERVICE_URL}/auth/login", 
-                json=data.model_dump()
+                json=data.model_dump(),
+                headers={"X-Forwarded-For": request.client.host}
             )
 
         if res.status_code != 200:

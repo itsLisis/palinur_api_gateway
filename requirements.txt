@@ -6,3 +6,5 @@ pydantic
 pydantic-settings
 PyJWT
 pydantic[email]
+python-multipart
+requests
