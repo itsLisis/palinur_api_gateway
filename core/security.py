@@ -44,8 +44,5 @@ def require_incomplete_profile(payload: dict = Depends(verify_jwt)):
 
 
 def get_current_user(payload: dict = Depends(verify_jwt)):
-    """
-    Dependency to get the current authenticated user.
-    Returns the JWT payload with user_id and complete_profile status.
-    """
+
     return payload

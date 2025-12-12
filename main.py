@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from routers.auth_proxy import router as auth_router
 from routers.user_proxy import router as user_router
 from routers.home_router import router as home_router
@@ -8,10 +9,13 @@ from routers.chat_proxy import router as chat_router
 
 app = FastAPI(title="API Gateway")
 
-# CORS for React
+# CORS for React (configurable via env for prod)
+# Example: CORS_ALLOW_ORIGINS="http://localhost:3000,https://tu-dominio.com"
+cors_allow_origins_raw = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:3000")
+cors_allow_origins = [o.strip() for o in cors_allow_origins_raw.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

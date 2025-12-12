@@ -17,9 +17,7 @@ async def get_user_chats(
     limit: int = Query(20, ge=1, le=100),
     payload: dict = Depends(get_current_user)
 ):
-    """
-    Obtiene todos los chats del usuario autenticado.
-    """
+
     user_id = payload["user_id"]
     
     try:
@@ -48,9 +46,7 @@ async def get_messages(
     page_size: int = Query(50, ge=1, le=100),
     payload: dict = Depends(get_current_user)
 ):
-    """
-    Obtiene el historial de mensajes de un chat.
-    """
+
     user_id = payload["user_id"]
     
     try:
@@ -77,9 +73,7 @@ async def mark_messages_read(
     chat_id: int,
     payload: dict = Depends(get_current_user)
 ):
-    """
-    Marca todos los mensajes de un chat como leídos.
-    """
+
     user_id = payload["user_id"]
     
     try:
@@ -106,9 +100,7 @@ async def get_chat_by_relationship(
     relationship_id: int,
     payload: dict = Depends(get_current_user)
 ):
-    """
-    Obtiene un chat por su relationship_id.
-    """
+
     user_id = payload["user_id"]
     
     try:
@@ -132,13 +124,10 @@ async def get_chat_by_relationship(
 
 @router.websocket("/ws/{token}")
 async def websocket_proxy(websocket: WebSocket, token: str):
-    """
-    Proxy WebSocket que redirige al chat service.
-    El gateway hace TODAS las verificaciones antes de conectar.
-    """
+
     await websocket.accept()
     
-    # 1. Desencriptar el token
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("sub") or payload.get("user_id")
@@ -159,8 +148,7 @@ async def websocket_proxy(websocket: WebSocket, token: str):
         await websocket.send_text(error_msg)
         await websocket.close(code=4001)
         return
-    
-    # 2. Verificar que el usuario tiene un match activo
+   
     try:
         async with httpx.AsyncClient() as client:
             match_response = await client.get(
@@ -192,7 +180,7 @@ async def websocket_proxy(websocket: WebSocket, token: str):
         await websocket.close(code=1011)
         return
     
-    # 3. Crear/obtener el chat
+
     try:
         async with httpx.AsyncClient() as client:
             partner_id = match_data.get("partner_id")
@@ -205,20 +193,20 @@ async def websocket_proxy(websocket: WebSocket, token: str):
                 }
             )
     except Exception:
-        pass  # El chat se creará automáticamente si no existe
+        pass 
     
-    # 4. Construir la URL del WebSocket con user_id Y relationship_id
+
     chat_ws_url = settings.CHAT_SERVICE_URL.replace("http://", "ws://").replace("https://", "wss://")
     chat_ws_url = f"{chat_ws_url}/ws/{user_id}/{relationship_id}"
     
     chat_ws = None
     
     try:
-        # Conectar al WebSocket del chat service
+       
         chat_ws = await websockets.connect(chat_ws_url)
         
         async def forward_to_chat():
-            """Reenvía mensajes del cliente al chat service."""
+     
             try:
                 while True:
                     data = await websocket.receive_text()
@@ -229,14 +217,14 @@ async def websocket_proxy(websocket: WebSocket, token: str):
                 pass
         
         async def forward_to_client():
-            """Reenvía mensajes del chat service al cliente."""
+       
             try:
                 async for message in chat_ws:
                     await websocket.send_text(message)
             except Exception:
                 pass
         
-        # Ejecutar ambas tareas en paralelo
+       
         await asyncio.gather(
             forward_to_chat(),
             forward_to_client(),
@@ -244,7 +232,7 @@ async def websocket_proxy(websocket: WebSocket, token: str):
         )
         
     except websockets.exceptions.InvalidStatusCode as e:
-        # El chat service rechazó la conexión
+      
         error_msg = json.dumps({"type": "error", "error": f"Connection rejected: {str(e)}"})
         await websocket.send_text(error_msg)
         await websocket.close(code=4001)
