@@ -1,15 +1,38 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: palinur-postgres
+    environment:
+      POSTGRES_USER: palinur
+      POSTGRES_PASSWORD: palinur123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../palinur_deployment/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    networks:
+      - palinur-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U palinur"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   auth-service:
     build:
       context: ../palinur_auth_service
       dockerfile: Dockerfile
     container_name: palinur-auth-service
     ports:
-      - "8002:8002"
+      - "8001:8001"
     volumes:
       - ../palinur_auth_service:/app
     env_file:
       - ../palinur_auth_service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - palinur-network
     restart: unless-stopped
@@ -20,11 +43,14 @@ services:
       dockerfile: Dockerfile
     container_name: palinur-user-service
     ports:
-      - "8001:8001"
+      - "8002:8002"
     volumes:
       - ../palinur_user_service:/app
     env_file:
       - ../palinur_user_service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - palinur-network
     restart: unless-stopped
@@ -40,6 +66,27 @@ services:
       - ../palinur_matching_service:/app
     env_file:
       - ../palinur_matching_service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - palinur-network
+    restart: unless-stopped
+
+  chat-service:
+    build:
+      context: ../palinur_chat_service
+      dockerfile: Dockerfile
+    container_name: palinur-chat-service
+    ports:
+      - "8004:8004"
+    volumes:
+      - ../palinur_chat_service:/app
+    env_file:
+      - ../palinur_chat_service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - palinur-network
     restart: unless-stopped
@@ -59,6 +106,7 @@ services:
       - auth-service
       - user-service
       - matching-service
+      - chat-service
     networks:
       - palinur-network
     restart: unless-stopped
@@ -86,3 +134,6 @@ services:
 networks:
   palinur-network:
     driver: bridge
+
+volumes:
+  postgres_data:

@@ -134,11 +134,11 @@ async def get_chat_by_relationship(
 async def websocket_proxy(websocket: WebSocket, token: str):
     """
     Proxy WebSocket que redirige al chat service.
-    El gateway desencripta el token y pasa solo el user_id al chat service.
+    El gateway hace TODAS las verificaciones antes de conectar.
     """
     await websocket.accept()
     
-    # Desencriptar el token en el gateway (igual que en REST endpoints)
+    # 1. Desencriptar el token
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("sub") or payload.get("user_id")
@@ -160,9 +160,56 @@ async def websocket_proxy(websocket: WebSocket, token: str):
         await websocket.close(code=4001)
         return
     
-    # Construir la URL del WebSocket del chat service con user_id
+    # 2. Verificar que el usuario tiene un match activo
+    try:
+        async with httpx.AsyncClient() as client:
+            match_response = await client.get(
+                f"{settings.MATCHING_SERVICE_URL}/matching/relationships/user/{user_id}/active"
+            )
+            
+            if match_response.status_code != 200:
+                error_msg = json.dumps({"type": "error", "error": "No tienes un match activo"})
+                await websocket.send_text(error_msg)
+                await websocket.close(code=4003)
+                return
+            
+            match_data = match_response.json()
+            if not match_data.get("has_active_match"):
+                error_msg = json.dumps({"type": "error", "error": "No tienes un match activo para chatear"})
+                await websocket.send_text(error_msg)
+                await websocket.close(code=4003)
+                return
+            
+            relationship_id = match_data.get("relationship_id")
+            if not relationship_id:
+                error_msg = json.dumps({"type": "error", "error": "Relationship ID no encontrado"})
+                await websocket.send_text(error_msg)
+                await websocket.close(code=4003)
+                return
+    except Exception as e:
+        error_msg = json.dumps({"type": "error", "error": f"Error verificando match: {str(e)}"})
+        await websocket.send_text(error_msg)
+        await websocket.close(code=1011)
+        return
+    
+    # 3. Crear/obtener el chat
+    try:
+        async with httpx.AsyncClient() as client:
+            partner_id = match_data.get("partner_id")
+            chat_create_response = await client.post(
+                f"{settings.CHAT_SERVICE_URL}/internal/chats/create",
+                params={
+                    "relationship_id": relationship_id,
+                    "user1_id": user_id,
+                    "user2_id": partner_id
+                }
+            )
+    except Exception:
+        pass  # El chat se creará automáticamente si no existe
+    
+    # 4. Construir la URL del WebSocket con user_id Y relationship_id
     chat_ws_url = settings.CHAT_SERVICE_URL.replace("http://", "ws://").replace("https://", "wss://")
-    chat_ws_url = f"{chat_ws_url}/ws/{user_id}"
+    chat_ws_url = f"{chat_ws_url}/ws/{user_id}/{relationship_id}"
     
     chat_ws = None
     

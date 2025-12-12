@@ -158,6 +158,25 @@ async def delete_profile_image(
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"User service unavailable: {str(e)}")
 
+@router.get("/profiles")
+async def get_all_profiles():
+    """Get all user profiles (for matching service)."""
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(f"{settings.USER_SERVICE_URL}/user/profiles")
+
+        if res.status_code != 200:
+            try:
+                error_detail = res.json()
+            except:
+                error_detail = res.text or "Unknown error from user service"
+            raise HTTPException(status_code=res.status_code, detail=error_detail)
+
+        return res.json()
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"User service unavailable: {str(e)}")
+
+
 @router.get("/profiles/random")
 async def get_random_profile(payload: dict = Depends(get_current_user)):
     """Get a random profile for the authenticated user."""
